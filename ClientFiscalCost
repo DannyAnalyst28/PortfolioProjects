@@ -1,0 +1,104 @@
+-- _FY 18-19_10.10.19 Chart and Last Funding Source
+
+With tb1 AS (
+Select
+  Distinct
+-- a.Completed,
+--   ([a.Completed:month])::text As Month
+  a.PatientName
+  , a.StartDate
+  , max(StartDate)
+--   , 
+  , a.FundingSources
+--   , a.PatientName
+  , sum(AmountDue) as Sum_Per_Session
+  , AmountDue
+  , Activity
+--   , max(StartDate)
+  , sum(AmountDue) Over (Partition By a.PatientID, a.FundingSources) as Amount
+--   ,count(Distinct Case When StatusDescription like '%ACTIVE%' Then 1 End) as Number_of_Active_Clients
+
+--   , sum(BilledTime) Over (Partition By PatientID, FundingSources) As Billed_Minutes
+, BilledTime
+  , Rate
+  , c.StatusDescription
+From vwPeriscopeActivities a
+  Left Join vwPeriscopeClients c
+  On a.PatientID=c.PatientID
+Where 
+-- --   a.NoShowID is null and a.NoCharge = 'f' and a.billable = 't' And 
+  [a.Completed:month] between '7/1/2018' And '6/30/2020'
+  Group By a.PatientName, a.FundingSources, a.AmountDue, a.Activity, a.Completed, BilledTime, Rate, C.StatusDescription, a.PatientID, a.StartDate
+  )
+-- Select * from tb1
+, tb2 As 
+(
+    select
+      max(StartDate)
+      , vwPeriscopeClients.PatientName
+    from
+      vwPeriscopeClients
+      left join vwPeriscopeActivities a on
+        vwPeriscopeClients.PatientID = a.PatientID
+        -- Where Completed between '7/1/2018' And '6/30/2019'
+        -- and FundingSources = 'CGF + MCHIP'
+    group by
+      vwPeriscopeClients.PatientName
+)
+-- Select * from tb2
+--   from tb1
+, tb3 As (
+select distinct
+      vwPeriscopeClients.PatientName
+      , FundingSources
+      , count(
+        distinct case
+          when StatusDescription like '%ACTIVE%'
+            then 1
+        end
+      )
+      as Number_of_Active_Clients
+      -- , Case When max(Completed) and StatusDescription like '%ACTIVE%' Then a.FundingSources End
+      , max(StartDate) over(partition by a.FundingSources, a.PatientID)
+    from
+      vwPeriscopeClients
+      left join vwPeriscopeActivities a on
+        vwPeriscopeClients.PatientID = a.PatientID
+        -- Where Completed between '7/1/2018' And '6/30/2019'
+        -- and FundingSources = 'CGF + MCHIP'
+    group by
+      FundingSources
+      , vwPeriscopeClients.PatientName
+      , a.StartDate
+      , a.PatientID
+    having
+      Number_of_Active_Clients = 1
+    order by
+      1
+      , 4 desc
+)
+-- Select * from tb3
+Select
+  tb1.FundingSources
+--   , Rate as Provisional_Rate
+-- , Sum(Number_of_Active_Clients) as Number_of_Active_Clients
+, 
+avg(AmountDue) as Average_Per_Session
+, avg(BilledTime) as Average_Minutes_Per_Session
+, '45' as Number_Weeks_Billed
+, (2.24 * Average_Minutes_Per_Session * 45) as Fiscal_Cost_Per_Client
+
+--     Over (Partition By FundingSources)
+from
+  tb1
+  join tb3 on
+    tb3.max = tb1.max and tb3.PatientName = tb1.PatientName
+-- Where 
+-- --   a.NoShowID is null and a.NoCharge = 'f' and a.billable = 't' And 
+--   tb1.StartDate between '7/1/2018' And '6/30/2019'
+-- Where Rate = '2.24000000'
+
+Group By tb1.FundingSources
+-- , tb1.Rate
+-- , tb3.Number_of_Active_Clients
+order by 1, 2
