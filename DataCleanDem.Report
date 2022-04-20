@@ -1,0 +1,62 @@
+Select Distinct 
+replace(regexp_replace (e.PatientName,'[0-9]','' ), '.', ''),
+-- a.PatientName, 
+e.Gender, e.AgeYears, Case When e.Ethnicity like '32 - Eastern European' Then '01 - White' When e.Ethnicity like '%Hispanic%' Then 'Hispanic/Latino' When e.Ethnicity like '%American Indian%' or e.Ethnicity='04 - Alaska Native' Then 'American Indian or Alaskan Native' When e.Ethnicity in ('07 - Filipino', '15 - Asian Indian', '29 - Other Asian')  Then '01 - White'
+When e.Ethnicity in('09 - Other White (e.g. Arabs, Iraqi, Turks)', '26 - Southern African', '34 - Other Middle Eastern', '31 - Armenian') Then '98 - Other' Else e.Ethnicity End As Ethnicity
+
+-- , Case 
+
+-- When e.City = 'Azuza' Then 'Azusa' 
+-- When e.City in ('BELL FLOWER') Then 'BELLFLOWER' 
+
+-- When e.City = 'CUDAY ' Then 'CUDAHY' When e.City='Dob Unknown' Then 'Unknown/Not Reported' 
+-- When e.City='Cerritos ' Then 'CERRITOS' 
+
+
+-- When e.City='Hispanic/Latino' Then 'Unknown/Not Reported' When e.City in('Huntigton Park', 'Hunting Park', 'Huntingon Park', 'Huntinton Park') Then 'Huntington Park' When e.City in('Los Anegles', 'Los Angeles, Ca','Los Angles') Then 'Los Angeles' When e.City in('Montbello','Montebeelo') Then 'Montebello' When e.City in('Norwal','Nowalk') Then 'Norwalk' When e.City in('Pico  Rivera','Pico Pivera') Then 'Pico Rivera' When e.City in('Santa Fe Spirngs','Santa Fe Sprngs','Sante Fe Springs') Then 'Santa Fe Springs' When e.City='Unkn' Then 'Unknown/Not Reported' When e.City in('Whitier','Whititer','Whitter','Whittier,','Whittier, Ca','Whtiier') Then 'Whittier' 
+
+-- Else e.City 
+-- End as City
+
+, Case When initcap(e.City) = 'Azuza' Then 'Azusa' 
+When initcap(e.City) = 'Belflower' Then 'Bellflower' When initcap(e.City) = 'Bell Flower' Then 'Bellflower' 
+When initcap(e.City) = 'Cudahy, Ca 90201' Then 'Cudahy' 
+When initcap(e.City) = 'Cuday ' Then 'Cudahy'
+
+
+When initcap(e.City)='Dob Unknown' Then 'Unknown/Not Reported' When initcap(e.City)='Downey,' Then 'Downey' When initcap(e.City)='Hacienda Hieghts' Then 'Hacienda Heights' When initcap(e.City)='Hispanic/Latino' Then 'Unknown/Not Reported' When initcap(e.City) in('Huntigton Park', 'Hunting Park', 'Huntingon Park', 'Huntinton Park') Then 'Huntington Park' When initcap(e.City) in('Los Anegles', 'Los Angeles, Ca','Los Angles') Then 'Los Angeles' When initcap(e.City) in('Montbello','Montebeelo') Then 'Montebello' When initcap(e.City) in('Norwal','Nowalk', 'Norwlak ') Then 'Norwalk' 
+
+When initcap(e.City) ='Paramount, Ca' Then 'Paramount' 
+
+When initcap(e.City) in('Pico  Rivera','Pico Pivera') Then 'Pico Rivera' When initcap(e.City) in('Santa Fe Spirngs','Santa Fe Sprngs','Sante Fe Springs', 'Santa Fr Springs') Then 'Santa Fe Springs' When initcap(e.City)='Unkn' Then 'Unknown/Not Reported' When initcap(e.City) in('Whitier','Whititer','Whitter','Whittier,','Whittier, Ca','Whtiier','Whittierc') Then 'Whittier' Else initcap(e.City) 
+End as City
+, e.ZipCode
+, vwperiscopeclients.FosterCare
+, ca.PsychHospitalizations, ca.PsychHospitalizationDetials
+, aa.PsychHospitalizations as AdultPsychHosp, aa.PsychHospitalizationDetials as AdultPsychDetails
+, ca.DCFSIntervention, p.DCFSCaseNumber
+, vwperiscopeclients.StatusDescription
+
+
+From vwPeriscopeActivities a
+Left Join vwExportClients e On e.PatientID = a.PatientID
+Left Join vwperiscopeclients on vwperiscopeclients.PatientID = e.PatientID
+Left Join vwpatients p On a.PatientID = p.PatientID
+Left Join AdultAssessmentRev0214 aa On p.PatientID = aa.PatientID
+Left Join ChildAdolescentAssessmentRev0214 ca On aa.PatientID =ca.PatientID
+Left Join lkpLivingArrangement la On p.LivingArrangementID = la.ID
+Left Join lkpMarital lm On p.MaritalStatusID = lm.ID
+Left Join vwDiagnosis on a.PatientID = vwDiagnosis.PatientID
+-- add diagnosis next
+Where
+[a.Completed=daterange]
+-- a.Completed between '7/1/2020' and '6/30/2021'
+and p.StatusDescription not like '%RFS CLOSED%'
+and e.BillingType <> 'NON' and e.PatientName not like '%TEST%' 
+and p.StatusDescription <> 'Non-Billable Activities'
+and p.StatusDescription <> 'EMPLOYEE - No longer with Agency'
+and p.StatusDescription <> 'Employee Terminated'
+and e.AgeYears is not null and noshowid is null and void =0
+-- and e.AgeYears between 16 and 24
+-- and e.AgeYears > 24
+Order by a.PatientName
