@@ -1,0 +1,126 @@
+With tb1 As (
+Select Distinct 
+--   a.FullName,
+a.PatientName
+    , c.AgeYears
+ , datediff(week, a.DOB, vwPatientPEIOutcomes.DueDate)/ (52.177457) as Age
+ , datediff(day, PatientPEI.StartDate, PatientPEI.EndDate) as TimeinEBP
+ , a.DOB, vwPatientPEIOutcomes.DueDate, c.AdmitDate
+  , vwPatientPEIOutcomes.OutcomeMeasureName, vwPatientPEI.FocusOfTreatmentDescription, vwPatientPEIOutcomes.EBPDescription, vwPatientPEIOutcomes.Score
+, c.StatusDescription,c.AssignedClinician  , vwPatientPEIOutcomes.IntervalName,lkpusers.FullName As CompletedBY, ppos.Comments,vwPatientPEIOutcomes.OutcomeComment, CurrentDXDesc
+  From vwPeriscopeClients c
+Left Join PatientPEI 
+on c.PatientID = PatientPEI.PatientID 
+Left Join vwPatientPEI on PatientPEI.PatientID = vwPatientPEI.PatientID and PatientPEI.FocusOfTreatmentID=vwPatientPEI.FocusOfTreatmentID 
+Left Join vwPeriscopeActivities a
+on c.PatientID=a.PatientID
+  Left Join vwPatientPEIOutcomes on PatientPEI.PatientPEIID = vwPatientPEIOutcomes.PatientPEIID
+
+Left Join PatientPEIOutcomeScores ppos 
+on vwPatientPEIOutcomes.PatientPEIOutcomeID=ppos.PatientPEIOutcomeID
+
+Left Join EBPOutcomeMeasures 
+on ppos.EBPOutcomeMeasureID=EBPOutcomeMeasures.EBPOutcomeMeasureID 
+
+Left Join lkpusers on vwPatientPEIOutcomes.CompletedByUserID = lkpusers.iD
+  Where  
+  [vwPatientPEIOutcomes.DueDate=daterange] and
+    [c.AdmitDate=daterange] and [a.PatientName=PatientID_gc]
+
+  and StatusDescription not like '%RFS CLOSED%' and vwPatientPEIOutcomes.EBPDescription not in ('PSC', 'CANS')
+
+order by PatientName, DueDate
+) 
+, tb2 as 
+(
+select
+Distinct
+PatientName as Client_Name
+, Age, IntervalName, DueDate, AdmitDate
+, Case When EBPDescription = '2B - Child-Parent Psychotherapy (CPP)' and Age < 3 and tb1.OutcomeMeasureName is null then 'No OMAs due to age' 
+When tb1.EBPDescription = '2W - Trauma Focused CBT (TF-CBT)' and (Age < 7 or Age > 18) and tb1.OutcomeMeasureName is null  then 'No OMAs due to age'
+When EBPDescription = '2Y - Triple P Positive Parenting Program' and (Age < 2 or Age > 16) and tb1.OutcomeMeasureName is null then 'No OMAs due to age'
+When EBPDescription = '4K - Managing and Adapting Practice (MAP)' and (Age < 6 or Age > 18) and FocusOfTreatmentDescription = 'Anxiety' and tb1.OutcomeMeasureName is null Then 'No OMAs due to age'
+When EBPDescription = '4K - Managing and Adapting Practice (MAP)' and Age < 12 and FocusOfTreatmentDescription = 'Depression' and tb1.OutcomeMeasureName is null Then 'No OMAs due to age'
+When EBPDescription = '4K - Managing and Adapting Practice (MAP)' and (Age < 2 and Age > 16) and FocusOfTreatmentDescription = 'Disruptive Behaviors' and tb1.OutcomeMeasureName is null Then 'No OMAs due to age'
+  When tb1.IntervalName = 'End' And TimeinEBP < 14 Then 'No OMAs due to time in EBP'
+  When tb1.OutcomeMeasureName is null and tb1.OutcomeComment is not null
+  Then tb1.OutcomeComment
+When tb1.OutcomeMeasureName is null and tb1.OutcomeComment is null then 'Never Submitted to QA'
+Else OutcomeMeasureName end as OMA
+  , CurrentDxDesc
+  , OutcomeComment
+, AssignedClinician, EBPDescription as EBP, FocusOfTreatmentDescription as Focus, Score
+, OutcomeComment as Comment, StatusDescription
+from tb1
+Where 
+  StatusDescription not like '%RFS CLOSED%' and EBPDescription not in ('PSC', 'CANS')
+order by PatientName, DueDate
+)
+-- select * from tb2
+, tb3 as
+(
+Select 
+  Distinct
+  a.PatientName
+  , Last_Value(a.FullName) Over (Partition By a.PatientName Order by a.Completed ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) as Assessment_Clinician
+  From vwPeriscopeActivities a
+  Where Activity = 'Initial Assessment Progress Note' 
+  )
+, tb4 as (
+Select Distinct 
+pt.PatientName
+, AgeYears
+, [pt.AdmitDate:date] as Admit_Date
+, pt.BillingType
+, StatusDescription
+  , vwPatientPEIOutcomes.DueDate
+,  vwPatientPEIOutcomes.OutcomeMeasureName, vwPatientPEIOutcomes.IntervalName, vwPatientPEIOutcomes.EBPDescription
+, g.effectivedate as G_EffectiveDate
+  , g.TotalScore as GAD_Score
+, r.effectivedate as R_EffectiveDate
+, phq.effectivedate as PHQ_EffectiveDate
+, pt.AssignedClinician, vwPatientPEI.FocusOfTreatmentDescription
+  FROM
+  vwperiscopeclients pt
+Left Join GAD7Outcome g on g.patientid = pt.patientid
+Left Join RCADSOutcome r on r.patientid = pt.patientid
+Left Join PHQ9Outcome phq on phq.patientid = pt.patientid
+--   left join vwPopulatePedSympCheckList p on pt.patientid=p.patientid
+--   left join lkpusers u on p.completedbyid=u.ID
+  left join vwPeriscopeActivities a on pt.patientid=a.patientid
+Left Join PatientPEI 
+on pt.PatientID = PatientPEI.PatientID 
+Left Join vwPatientPEI on PatientPEI.PatientID = vwPatientPEI.PatientID and PatientPEI.FocusOfTreatmentID=vwPatientPEI.FocusOfTreatmentID 
+
+  Left Join vwPatientPEIOutcomes on PatientPEI.PatientPEIID = vwPatientPEIOutcomes.PatientPEIID
+
+Where 
+
+   [vwPatientPEIOutcomes.ManagerId=SupervisorID_GC] and [vwPatientPEIOutcomes.DueDate=daterange] and [a.PatientName=PatientID_gc]
+
+
+Order By  Admit_Date asc, pt.PatientName
+  )
+-- select * from tb4
+
+, tb5 as (
+Select
+Distinct
+tb2.Client_Name, tb2.Age, tb2.EBP, Case When tb2.IntervalName = 'Start' Then 'Initial' When tb2.IntervalName = 'End' Then 'Discharge' Else tb2.IntervalName End as Interval_1 , tb2.DueDate, tb2.AdmitDate, tb2.Score
+-- , tb2.OMA
+, Case When OMA = 'Never Submitted to QA' and G_EffectiveDate is null and R_EffectiveDate is null and PHQ_EffectiveDate is null then 'True Missing' Else OMA end as OMA
+, Case When G_EffectiveDate is not null then 1 else null end as G_EffectiveDate
+, Case When R_EffectiveDate is not null then 1 else null end as R_EffectiveDate
+, Case When PHQ_EffectiveDate is not null then 1  else null end as PHQ_EffectiveDate
+, tb2.AssignedClinician as Assigned_Clinician
+, tb3.Assessment_Clinician
+, tb2.Focus
+, tb2.CurrentDxDesc
+From tb2
+Left Join tb3 on tb2.Client_Name = tb3.PatientName
+Left Join tb4 on tb2.Client_Name = tb4.PatientName
+Order By Client_Name, EBP, DueDate)
+Select Client_Name, Age, EBP, OMA, Interval_1, DueDate, AdmitDate, Assigned_Clinician, Assessment_Clinician, CurrentDxDesc, Score
+From tb5
+Order By OMA, Client_Name
