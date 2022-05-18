@@ -1,0 +1,299 @@
+WITH #PSC as
+  (SELECT 
+    p.pedsympchecklistid, AnswerValue, pq.questionnumber
+    from  
+    pedsympchecklist p
+    left join 
+    pedsympclanswer pa on p.pedsympchecklistid=pa.pedsympchecklistid
+    left join
+    pedsympclquestion pq on pa.pedsympclquestionid=pq.pedsympclquestionid)
+, tb1 As (
+
+ SELECT Distinct
+--   l.Description as Location,  
+  p.patientid as "Exym ID",
+  pt.StatusDescription,
+--   pt.IBHIS_ClientIdentifier as "IBHIS ID",
+  pt.Lastname+','+' '+pt.FirstName as "Client Name", 
+pt.PatientName,
+ p.effectivedate, 
+--   vwPatientPEIOutcomes.OutcomeMeasureName,
+--   vwPatientPEIOutcomes.IntervalName,
+  TO_CHAR(effectivedate,'MM/DD/YYYY') as "Filled Out On",  
+  a.Completed,
+  u.FUllName as CompletedBy, pt.AssessmentType, 
+--   max(a.Completed) over(partition by a.PatientID) as Date_Of_Last_Service,
+--   u.NPI,
+  FilledOutBy,
+    CASE
+        When p.FilledOutByRelation = 1 then 'Mother'
+        When p.FilledOutByRelation = 2 then 'Father'
+        When p.FilledOutByRelation = 4 then 'Grandmother'
+        When p.FilledOutByRelation = 8 then 'Grandfather'
+        When p.FilledOutByRelation = 16 then 'Foster Mother'
+        When p.FilledOutByRelation = 32 then 'Foster Father'
+        When p.FilledOutByRelation = 64 then 'Aunt'
+        When p.FilledOutByRelation = 128 then 'Uncle'
+        When p.FilledOutByRelation = 256 then 'Agency Staff'
+        When p.FilledOutByRelation = 512 then 'County Social Worker'
+        When p.FilledOutByRelation = 1024 then 'Non-Relative Caregiver'
+        When p.FilledOutByRelation = 2048 then 'Self'
+        When p.FilledOutByRelation = 4096 then 'Legal Guardian'
+        When p.FilledOutByRelation = 8192 then 'Stepmother'
+        When p.FilledOutByRelation = 16384 then 'Stepfather'
+        When p.FilledOutByRelation = 32768 then 'Sibling'
+        When p.FilledOutByRelation = 65536 then 'Other'
+    End as "Relation",
+
+
+NVL(Q1.AnswerValue,0) + NVL(Q2.AnswerValue,0) + NVL(Q3.AnswerValue,0) + NVL(Q4.AnswerValue,0) + NVL(Q5.AnswerValue,0) + NVL(Q6.AnswerValue,0) + NVL(Q7.AnswerValue,0) + NVL(Q8.AnswerValue,0) + NVL(Q9.AnswerValue,0) + NVL(Q10.AnswerValue,0) + NVL(Q11.AnswerValue,0) + NVL(Q12.AnswerValue,0) + NVL(Q13.AnswerValue,0) + NVL(Q14.AnswerValue,0) + NVL(Q15.AnswerValue,0) + NVL(Q16.AnswerValue,0) + NVL(Q17.AnswerValue,0) + NVL(Q18.AnswerValue,0) + NVL(Q19.AnswerValue,0) + NVL(Q20.AnswerValue,0) + NVL(Q21.AnswerValue,0) + NVL(Q22.AnswerValue,0) + NVL(Q23.AnswerValue,0) + NVL(Q24.AnswerValue,0) + NVL(Q25.AnswerValue,0) + NVL(Q26.AnswerValue,0) + NVL(Q27.AnswerValue,0) + NVL(Q28.AnswerValue,0) + NVL(Q29.AnswerValue,0) + NVL(Q30.AnswerValue,0) + NVL(Q31.AnswerValue,0) + NVL(Q32.AnswerValue,0) + NVL(Q33.AnswerValue,0) + NVL(Q34.AnswerValue,0) + NVL(Q35.AnswerValue,0) as Sum_Total,
+
+NVL(Q4.AnswerValue,0) + NVL(Q7.AnswerValue,0) + NVL(Q8.AnswerValue,0) + NVL(Q9.AnswerValue,0) + NVL(Q14.AnswerValue,0) As Attention,
+NVL(Q11.AnswerValue,0) + NVL(Q13.AnswerValue,0) + NVL(Q19.AnswerValue,0) + NVL(Q22.AnswerValue,0) + NVL(Q27.AnswerValue,0) as Anxiety_Depression,
+NVL(Q16.AnswerValue,0) + NVL(Q29.AnswerValue,0) + NVL(Q31.AnswerValue,0) + NVL(Q32.AnswerValue,0) + NVL(Q33.AnswerValue,0) + NVL(Q34.AnswerValue,0) + NVL(Q35.AnswerValue,0) as Behavioral_Interpersonal,
+
+    Q1.AnswerValue as "1",
+    Q2.AnswerValue as "2",
+    Q3.AnswerValue as "3",
+    Q4.AnswerValue as "4",
+    Q5.AnswerValue as "5",
+    Q6.AnswerValue as "6",
+    Q7.AnswerValue as "7",
+    Q8.AnswerValue as "8",
+    Q9.AnswerValue as "9",
+    Q10.AnswerValue as "10",
+    Q11.AnswerValue as "11",
+    Q12.AnswerValue as "12",
+    Q13.AnswerValue as "13",
+    Q14.AnswerValue as "14",
+    Q15.AnswerValue as "15",
+    Q16.AnswerValue as "16",
+    Q17.AnswerValue as "17",
+    Q18.AnswerValue as "18",
+    Q19.AnswerValue as "19",
+    Q20.AnswerValue as "20",
+    Q21.AnswerValue as "21",
+    Q22.AnswerValue as "22",
+    Q23.AnswerValue as "23",
+    Q24.AnswerValue as "24",
+    Q25.AnswerValue as "25",
+    Q26.AnswerValue as "26",
+    Q27.AnswerValue as "27",
+    Q28.AnswerValue as "28",
+    Q29.AnswerValue as "29",
+    Q30.AnswerValue as "30",
+    Q31.AnswerValue as "31",
+    Q32.AnswerValue as "32",
+    Q33.AnswerValue as "33",
+    Q34.AnswerValue as "34",
+    Q35.AnswerValue as "35",
+  p.StatusLabel,
+--   , Case when StatusDescription like '%DISCHARGED%' and StatusLabel <> 'Discharge' Then 'No Discharge' Else StatusLabel End As Stat,
+  
+  pt.AdmitDate, pt.AgeYears
+--   max(a.Completed)  
+-- over(partition by a.PatientID) as Date_Of_Last_Service
+  FROM
+  vwPopulatePedSympCheckList p
+  left join lkpusers u on p.completedbyid=u.ID
+  left join vwperiscopeclients pt on p.patientid=pt.patientid
+  left join vwPeriscopeActivities a on p.patientid=a.patientid
+  left join lkpnotestatus ns on p.StatusID=ns.id
+  left join locations l on pt.Location=l.ID
+  left join
+    (select pedsympchecklistid, answervalue from  #PSC 
+    where QuestionNumber = 1) Q1 on p.PedSympCheckListID=q1.PedSympCheckListID
+  left join (select pedsympchecklistid, answervalue from  #PSC 
+    where QuestionNumber = 2) Q2 on p.PedSympCheckListID=q2.PedSympCheckListID
+  left join (select pedsympchecklistid, answervalue from  #PSC 
+    where QuestionNumber = 3) Q3 on p.PedSympCheckListID=q3.PedSympCheckListID
+  left join (select pedsympchecklistid, answervalue from  #PSC 
+    where QuestionNumber = 4) Q4 on p.PedSympCheckListID=q4.PedSympCheckListID
+  left join (select pedsympchecklistid, answervalue from  #PSC 
+    where QuestionNumber = 5) Q5 on p.PedSympCheckListID=q5.PedSympCheckListID
+  left join (select pedsympchecklistid, answervalue from  #PSC 
+    where QuestionNumber = 6) Q6 on p.PedSympCheckListID=q6.PedSympCheckListID
+  left join (select pedsympchecklistid, answervalue from  #PSC 
+    where QuestionNumber = 7) Q7 on p.PedSympCheckListID=q7.PedSympCheckListID
+  left join (select pedsympchecklistid, answervalue from  #PSC 
+    where QuestionNumber = 8) Q8 on p.PedSympCheckListID=q8.PedSympCheckListID
+  left join (select pedsympchecklistid, answervalue from  #PSC 
+    where QuestionNumber = 9) Q9 on p.PedSympCheckListID=q9.PedSympCheckListID
+  left join (select pedsympchecklistid, answervalue from  #PSC 
+    where QuestionNumber = 10) Q10 on p.PedSympCheckListID=q10.PedSympCheckListID
+  left join (select pedsympchecklistid, answervalue from  #PSC 
+    where QuestionNumber = 11) Q11 on p.PedSympCheckListID=q11.PedSympCheckListID
+  left join (select pedsympchecklistid, answervalue from  #PSC 
+    where QuestionNumber = 12) Q12 on p.PedSympCheckListID=q12.PedSympCheckListID
+  left join (select pedsympchecklistid, answervalue from  #PSC 
+    where QuestionNumber = 13) Q13 on p.PedSympCheckListID=q13.PedSympCheckListID
+  left join (select pedsympchecklistid, answervalue from  #PSC 
+    where QuestionNumber = 14) Q14 on p.PedSympCheckListID=q14.PedSympCheckListID
+  left join (select pedsympchecklistid, answervalue from  #PSC 
+    where QuestionNumber = 15) Q15 on p.PedSympCheckListID=q15.PedSympCheckListID
+  left join (select pedsympchecklistid, answervalue from  #PSC 
+    where QuestionNumber = 16) Q16 on p.PedSympCheckListID=q16.PedSympCheckListID
+  left join (select pedsympchecklistid, answervalue from  #PSC 
+    where QuestionNumber = 17) Q17 on p.PedSympCheckListID=q17.PedSympCheckListID
+  left join (select pedsympchecklistid, answervalue from  #PSC 
+    where QuestionNumber = 18) Q18 on p.PedSympCheckListID=q18.PedSympCheckListID
+  left join (select pedsympchecklistid, answervalue from  #PSC 
+    where QuestionNumber = 19) Q19 on p.PedSympCheckListID=q19.PedSympCheckListID
+  left join (select pedsympchecklistid, answervalue from  #PSC 
+    where QuestionNumber = 20) Q20 on p.PedSympCheckListID=q20.PedSympCheckListID
+  left join (select pedsympchecklistid, answervalue from  #PSC 
+    where QuestionNumber = 21) Q21 on p.PedSympCheckListID=q21.PedSympCheckListID
+  left join (select pedsympchecklistid, answervalue from  #PSC 
+    where QuestionNumber = 22) Q22 on p.PedSympCheckListID=q22.PedSympCheckListID
+  left join (select pedsympchecklistid, answervalue from  #PSC 
+    where QuestionNumber = 23) Q23 on p.PedSympCheckListID=q23.PedSympCheckListID
+  left join (select pedsympchecklistid, answervalue from  #PSC 
+    where QuestionNumber = 24) Q24 on p.PedSympCheckListID=q24.PedSympCheckListID
+  left join (select pedsympchecklistid, answervalue from  #PSC 
+    where QuestionNumber = 25) Q25 on p.PedSympCheckListID=q25.PedSympCheckListID
+  left join (select pedsympchecklistid, answervalue from  #PSC 
+    where QuestionNumber = 26) Q26 on p.PedSympCheckListID=q26.PedSympCheckListID
+  left join (select pedsympchecklistid, answervalue from  #PSC 
+    where QuestionNumber = 27) Q27 on p.PedSympCheckListID=q27.PedSympCheckListID
+  left join (select pedsympchecklistid, answervalue from  #PSC 
+    where QuestionNumber = 28) Q28 on p.PedSympCheckListID=q28.PedSympCheckListID
+  left join (select pedsympchecklistid, answervalue from  #PSC 
+    where QuestionNumber = 29) Q29 on p.PedSympCheckListID=q29.PedSympCheckListID
+  left join (select pedsympchecklistid, answervalue from  #PSC 
+    where QuestionNumber = 30) Q30 on p.PedSympCheckListID=q30.PedSympCheckListID
+  left join (select pedsympchecklistid, answervalue from  #PSC 
+    where QuestionNumber = 31) Q31 on p.PedSympCheckListID=q31.PedSympCheckListID
+  left join (select pedsympchecklistid, answervalue from  #PSC 
+    where QuestionNumber = 32) Q32 on p.PedSympCheckListID=q32.PedSympCheckListID
+  left join (select pedsympchecklistid, answervalue from  #PSC 
+    where QuestionNumber = 33) Q33 on p.PedSympCheckListID=q33.PedSympCheckListID
+  left join (select pedsympchecklistid, answervalue from  #PSC 
+    where QuestionNumber = 34) Q34 on p.PedSympCheckListID=q34.PedSympCheckListID
+  left join (select pedsympchecklistid, answervalue from  #PSC 
+    where QuestionNumber = 35) Q35 on p.PedSympCheckListID=q35.PedSympCheckListID
+  left join pedsympclanswer pa on p.pedsympchecklistid=pa.pedsympchecklistid
+  left join pedsympclquestion pq on pa.pedsympclquestionid=pq.pedsympclquestionid
+  left join lkpusers on p.completedbyid=lkpusers.ID
+  left join lkpnotestatus on p.StatusID=lkpnotestatus.id
+  left join locations on pt.Location=locations.ID
+--   Left Join vwPatientPEIOutcomes
+--   On 
+--   vwPatientPEIOutcomes.patientid = p.patientid and 
+--   vwPatientPEIOutcomes.CompletedByUserID = p.CompletedByID
+-- WHERE effectivedate between '2019-07-01' and '2021-06-30' 
+  
+  
+--   pt.PatientName like '%ARELLANES, SHYANNE 4515022%'
+-- And pt.AdmitDate between '7/1/2019' And '6/30/2020'
+-- and vwperiscopeclients.PatientName = 'GIGANTE, ISABELA'
+--   Where vwPatientPEIOutcomes.OutcomeMeasureName = 'PSC'
+Order By 
+-- Location, 
+pt.PatientName
+)
+-- , discharge_cte as (
+--   Select PatientName, StatusLabel from tb1
+--   Where StatusLabel = 'Discharge' 
+-- --   or Stat = 'No Discharge'
+--   )
+-- Select * from tb1
+-- Select tb1.*
+-- From tb1
+, tb2 as (
+Select 
+Distinct
+
+tb1.PatientName
+--   , "Filled Out On" as "Completed_Date"
+  
+  , effectivedate
+  
+  , ageyears, StatusDescription
+-- , row_number () Over (Partition by tb1.PatientName, tb1.StatusLabel Order By tb1.PatientName) as rn
+-- , tb1.Stat
+-- , tb1.StatusLabel
+-- , Case When tb1.PatientName = tb1.PatientName and Sum_Total = '0' 
+-- -- and Attention = 0 and Anxiety_Depression = 0 
+-- Then StatusLabel = 'False' Else StatusLabel End As StatusLabel
+
+  
+, case
+  when tb1.PatientName = tb1.PatientName
+  and Sum_Total = 0
+  and Attention = 0
+  and Anxiety_Depression = 0
+    then 'False'
+  When tb1.PatientName = tb1.PatientName
+and min(Sum_Total) over (Partition By tb1.PatientName) = max(Sum_Total) Over (Partition By tb1.PatientName)
+Then 'False'
+  else StatusLabel
+end as StatusLabel1
+
+  
+  
+  
+,Sum_Total
+  , Attention, Anxiety_Depression, Behavioral_Interpersonal
+--   , row_number() Over Partition by 
+--   ,  Count(StatusLabel) Over (Partition By tb1.PatientName) as Number_Clients
+ 
+--  tb1.PatientName, tb1.StatusLabel
+-- From tb1
+-- From discharge_cte
+-- Left Join 
+From tb1 
+-- on tb1.PatientName = discharge_cte.PatientName
+Where 
+-- and to_date("Filled Out On",'MM/DD/YYYY')  between '2019-07-01' and '2020-11-30'
+-- and 
+-- AdmitDate between '7/1/2019' And '9/30/2021' and 
+-- "Completed_Date" between '7/1/2019' And '9/30/2021' and
+
+-- and 
+tb1.StatusDescription in ('DISCHARGED - Partially Met Goals', 'DISCHARGED - Client met treatment goals')
+-- --                               , 'ACTIVE - In treatment')
+and not tb1.StatusLabel in ('Reassessment')
+-- and tb1.StatusLabel <> 'Initial' 
+and tb1.StatusLabel <> 'RFS CLOSED'
+
+-- Group By tb1.PatientName, tb1."Filled Out On", tb1.StatusDescription, tb1.Sum_Total, tb1.Attention, tb1.Anxiety_Depression, tb1.StatusLabel, tb1.Behavioral_Interpersonal
+  
+Order By PatientName
+--   , StatusLabel desc
+-- "Completed_Date" Desc)
+ ) 
+, tb3 as (
+Select  
+-- Case When StatusLabel1 = 'Initial' and 'Discharge' 
+
+* from tb2
+-- SELECT 
+-- PatientName, Completed_Date, StatusLabel1, Sum_Total, Attention, Anxiety_Depression, Behavioral_Interpersonal
+--   from tb2
+Where 
+effectivedate between '2019-07-01' and '2022-03-31' 
+-- [effectivedate=daterange] 
+-- "Completed_Date" > '07/01/2019'
+ 
+and not StatusLabel1 = 'False'
+-- and StatusLabel1 =
+)
+, tb4 as (
+Select PatientName, StatusLabel1  , Sum_Total
+From tb2
+--   Group By 1
+  )
+-- Select * from tb4
+
+, tb5 as
+(
+Select 
+PatientName, 
+Sum_Total,
+  StatusLabel1,
+(Sum_Total - avg(Sum_Total) over ())
+/ (stddev(Sum_Total) over ()) as zscore
+from tb4 
+Order by 1)
+Select * from tb5
+Where StatusLabel1 = 'Discharge'
